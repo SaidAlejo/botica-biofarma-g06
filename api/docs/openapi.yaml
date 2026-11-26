@@ -1,0 +1,1232 @@
+openapi: 3.0.3
+info:
+  title: API REST - Botica Biofarma (Grupo 06)
+  version: 1.0.0
+  description: >-
+    API REST del Sistema de Gestión de Botica Biofarma desarrollada con Node.js,
+    Express y MySQL para la Unidad Didáctica Servicios de TI (Actividad Integradora).
+    Integrantes del Grupo 06: Jeancarlo Alejo (Coordinador - Productos),
+    Jesus Sarmiento (Categorías), Dariel Carpio (Proveedores) y Piero Ramos (Clientes).
+  contact:
+    name: Grupo 06 - Botica Biofarma (Jeancarlo Alejo, Jesus Sarmiento, Dariel Carpio, Piero Ramos)
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+  - url: /api/v1
+    description: Servidor actual (hosting)
+tags:
+  - name: Autenticación
+    description: Inicio de sesión y emisión de token JWT dinámico
+  - name: Productos
+    description: Gestión de productos farmacéuticos (Jeancarlo Alejo - sti_g06_productos)
+  - name: Categorías
+    description: Gestión de categorías de botica (Jesus Sarmiento - sti_g06_categorias)
+  - name: Proveedores
+    description: Gestión de laboratorios y droguerías (Dariel Carpio - sti_g06_proveedores)
+  - name: Clientes
+    description: Gestión de clientes de la botica (Piero Ramos - sti_g06_clientes)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ParamId:
+      name: id
+      in: path
+      required: true
+      description: Identificador numérico entero positivo del registro
+      schema:
+        type: integer
+        minimum: 1
+    ParamBuscar:
+      name: buscar
+      in: query
+      description: Texto a buscar parcialmente en los campos principales
+      schema:
+        type: string
+    ParamPagina:
+      name: pagina
+      in: query
+      description: Número de página (entero positivo)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    ParamLimite:
+      name: limite
+      in: query
+      description: Cantidad de registros por página (máximo 50)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 5
+
+  schemas:
+    Credenciales:
+      type: object
+      required: [usuario, password]
+      properties:
+        usuario:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: Said123
+
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        usuario:
+          type: string
+          example: admin
+        rol:
+          type: string
+          example: ADMIN
+
+    Mensaje:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          example: Operación realizada correctamente
+
+    MensajeCreado:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          example: Registro creado correctamente
+        id:
+          type: integer
+          example: 13
+
+    Error:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          example: Datos inválidos
+        errores:
+          type: array
+          items:
+            type: string
+          example: ["El código es obligatorio", "El nombre es obligatorio"]
+
+    ResumenItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Analgésicos y Antiinflamatorios
+
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          maxLength: 20
+          example: CAT-ANA-01
+        nombre:
+          type: string
+          maxLength: 100
+          example: Analgésicos y Antiinflamatorios
+        descripcion:
+          type: string
+          maxLength: 255
+          example: Medicamentos para alivio del dolor y fiebre
+        pasillo_ubicacion:
+          type: string
+          maxLength: 60
+          example: Pasillo A - Estante 1
+        requiere_frio:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        activo:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    CategoriaInput:
+      type: object
+      required: [codigo, nombre, descripcion, pasillo_ubicacion]
+      properties:
+        codigo:
+          type: string
+          maxLength: 20
+          example: CAT-OFT-11
+        nombre:
+          type: string
+          maxLength: 100
+          example: Oftalmología y Salud Visual
+        descripcion:
+          type: string
+          maxLength: 255
+          example: Gotas lubricantes, colirios y soluciones para lentes de contacto
+        pasillo_ubicacion:
+          type: string
+          maxLength: 60
+          example: Pasillo B - Estante 5
+        requiere_frio:
+          type: integer
+          enum: [0, 1]
+          example: 0
+
+    CategoriaPatch:
+      type: object
+      minProperties: 1
+      properties:
+        codigo:
+          type: string
+          maxLength: 20
+        nombre:
+          type: string
+          maxLength: 100
+        descripcion:
+          type: string
+          maxLength: 255
+        pasillo_ubicacion:
+          type: string
+          maxLength: 60
+          example: Pasillo B - Estante 6
+        requiere_frio:
+          type: integer
+          enum: [0, 1]
+
+    ListaCategorias:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        limite:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 10
+        totalPaginas:
+          type: integer
+          example: 2
+        datos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Categoria"
+
+    Proveedor:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        ruc:
+          type: string
+          example: "20100018625"
+        razon_social:
+          type: string
+          maxLength: 150
+          example: Medifarma S.A.
+        nombre_comercial:
+          type: string
+          maxLength: 120
+          example: Laboratorios Medifarma
+        telefono:
+          type: string
+          maxLength: 20
+          example: 01-3326200
+        correo:
+          type: string
+          maxLength: 120
+          example: ventas@medifarma.com.pe
+        direccion:
+          type: string
+          maxLength: 200
+          example: Jr. Ecuador 787, Cercado de Lima
+        activo:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    ProveedorInput:
+      type: object
+      required: [ruc, razon_social, nombre_comercial, telefono, correo, direccion]
+      properties:
+        ruc:
+          type: string
+          example: "20512345678"
+        razon_social:
+          type: string
+          maxLength: 150
+          example: Droguería del Sur Farmacéutica S.A.C.
+        nombre_comercial:
+          type: string
+          maxLength: 120
+          example: Droguería del Sur
+        telefono:
+          type: string
+          maxLength: 20
+          example: 052-412350
+        correo:
+          type: string
+          maxLength: 120
+          example: ventas@drogueriadelsur.pe
+        direccion:
+          type: string
+          maxLength: 200
+          example: Parque Industrial Mz. D Lt. 8, Tacna
+
+    ProveedorPatch:
+      type: object
+      minProperties: 1
+      properties:
+        ruc:
+          type: string
+        razon_social:
+          type: string
+        nombre_comercial:
+          type: string
+        telefono:
+          type: string
+          example: 052-419900
+        correo:
+          type: string
+        direccion:
+          type: string
+
+    ListaProveedores:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        limite:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 10
+        totalPaginas:
+          type: integer
+          example: 2
+        datos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Proveedor"
+
+    Producto:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        sku:
+          type: string
+          maxLength: 25
+          example: BIO-MED-001
+        nombre:
+          type: string
+          maxLength: 150
+          example: Paracetamol 500mg Caja x 100
+        gramaje:
+          type: string
+          maxLength: 60
+          example: 500 mg
+        categoria_id:
+          type: integer
+          example: 1
+        categoria_nombre:
+          type: string
+          example: Analgésicos y Antiinflamatorios
+        proveedor_id:
+          type: integer
+          example: 1
+        proveedor_nombre:
+          type: string
+          example: Laboratorios Medifarma
+        precio:
+          type: number
+          example: 12.5
+        stock:
+          type: integer
+          example: 140
+        requiere_receta:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        imagen:
+          type: string
+          maxLength: 150
+          example: paracetamol_500mg.png
+        activo:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    ProductoInput:
+      type: object
+      required: [sku, nombre, gramaje, categoria_id, proveedor_id, precio, stock]
+      properties:
+        sku:
+          type: string
+          maxLength: 25
+          example: BIO-VIT-013
+        nombre:
+          type: string
+          maxLength: 150
+          example: Vitamina C 1000mg Tabletas Efervescentes
+        gramaje:
+          type: string
+          maxLength: 60
+          example: Tubo x 10 tabletas
+        categoria_id:
+          type: integer
+          example: 9
+        proveedor_id:
+          type: integer
+          example: 4
+        precio:
+          type: number
+          example: 21.9
+        stock:
+          type: integer
+          example: 45
+        requiere_receta:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        imagen:
+          type: string
+          maxLength: 150
+          example: default.png
+
+    ProductoPatch:
+      type: object
+      minProperties: 1
+      properties:
+        sku:
+          type: string
+        nombre:
+          type: string
+        gramaje:
+          type: string
+        categoria_id:
+          type: integer
+        proveedor_id:
+          type: integer
+        precio:
+          type: number
+          example: 15.5
+        stock:
+          type: integer
+          example: 80
+        requiere_receta:
+          type: integer
+          enum: [0, 1]
+
+    ListaProductos:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        limite:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 12
+        totalPaginas:
+          type: integer
+          example: 3
+        datos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Producto"
+
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        dni:
+          type: string
+          example: "71452890"
+        nombres:
+          type: string
+          maxLength: 100
+          example: María Fernanda
+        apellidos:
+          type: string
+          maxLength: 100
+          example: Quispe Mamani
+        telefono:
+          type: string
+          maxLength: 20
+          example: "952418763"
+        correo:
+          type: string
+          maxLength: 120
+          example: mfernanda.quispe@gmail.com
+        direccion:
+          type: string
+          maxLength: 200
+          example: Av. Bolognesi 842, Tacna
+        activo:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    ClienteInput:
+      type: object
+      required: [dni, nombres, apellidos, telefono, correo, direccion]
+      properties:
+        dni:
+          type: string
+          example: "72894510"
+        nombres:
+          type: string
+          maxLength: 100
+          example: Claudia Sofía
+        apellidos:
+          type: string
+          maxLength: 100
+          example: Valdivia Torres
+        telefono:
+          type: string
+          maxLength: 20
+          example: "952874123"
+        correo:
+          type: string
+          maxLength: 120
+          example: claudia.valdivia@gmail.com
+        direccion:
+          type: string
+          maxLength: 200
+          example: Calle Arias Araguez 230, Tacna
+
+    ClientePatch:
+      type: object
+      minProperties: 1
+      properties:
+        dni:
+          type: string
+        nombres:
+          type: string
+        apellidos:
+          type: string
+        telefono:
+          type: string
+          example: "952998877"
+        correo:
+          type: string
+        direccion:
+          type: string
+
+    ListaClientes:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        limite:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 10
+        totalPaginas:
+          type: integer
+          example: 2
+        datos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cliente"
+
+paths:
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión y obtener token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credenciales"
+      responses:
+        "200":
+          description: Credenciales válidas, devuelve token JWT, usuario y rol
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+        "400":
+          description: Faltan usuario o password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /productos:
+    get:
+      tags: [Productos]
+      summary: Listar productos activos con búsqueda y paginación (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ParamBuscar"
+        - name: categoria_id
+          in: query
+          description: Filtra productos por ID de categoría
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/ParamPagina"
+        - $ref: "#/components/parameters/ParamLimite"
+      responses:
+        "200":
+          description: Página de productos activos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaProductos"
+        "400":
+          description: Parámetros de consulta inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token requerido, inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags: [Productos]
+      summary: Registrar un nuevo producto (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductoInput"
+      responses:
+        "201":
+          description: Producto registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensajeCreado"
+        "400":
+          description: Datos inválidos o FK inexistente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "409":
+          description: El SKU del producto ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /productos/resumen:
+    get:
+      tags: [Productos]
+      summary: Listado corto de productos activos para select (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Arreglo de productos con id y nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumenItem"
+        "401":
+          description: Token requerido, inválido o expirado
+
+  /productos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ParamId"
+    get:
+      tags: [Productos]
+      summary: Consultar producto activo por ID (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Producto"
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "404":
+          description: Producto no encontrado o inactivo
+    put:
+      tags: [Productos]
+      summary: Edición completa de producto (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductoInput"
+      responses:
+        "200":
+          description: Producto actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mensaje"
+        "400":
+          description: ID o datos inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Producto no encontrado o inactivo
+        "409":
+          description: El SKU ya existe
+    patch:
+      tags: [Productos]
+      summary: Edición parcial de producto, ej. precio o stock (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductoPatch"
+      responses:
+        "200":
+          description: Producto actualizado parcialmente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mensaje"
+        "400":
+          description: Campos inválidos o no permitidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso
+        "404":
+          description: Producto no encontrado o inactivo
+        "409":
+          description: El SKU ya existe
+    delete:
+      tags: [Productos]
+      summary: Eliminación lógica de producto (activo = 0) (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Producto eliminado lógicamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mensaje"
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Producto no encontrado o ya inactivo
+
+  /categorias:
+    get:
+      tags: [Categorías]
+      summary: Listar categorías activas con búsqueda y paginación (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ParamBuscar"
+        - $ref: "#/components/parameters/ParamPagina"
+        - $ref: "#/components/parameters/ParamLimite"
+      responses:
+        "200":
+          description: Página de categorías activas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaCategorias"
+        "400":
+          description: Parámetros inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+    post:
+      tags: [Categorías]
+      summary: Registrar una nueva categoría (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInput"
+      responses:
+        "201":
+          description: Categoría registrada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensajeCreado"
+        "400":
+          description: Datos inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "409":
+          description: El código de categoría ya existe
+
+  /categorias/resumen:
+    get:
+      tags: [Categorías]
+      summary: Listado corto de categorías activas para select (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Arreglo de categorías con id y nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumenItem"
+        "401":
+          description: Token requerido, inválido o expirado
+
+  /categorias/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ParamId"
+    get:
+      tags: [Categorías]
+      summary: Consultar categoría activa por ID (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Categoría encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Categoria"
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "404":
+          description: Categoría no encontrada o inactiva
+    put:
+      tags: [Categorías]
+      summary: Edición completa de categoría (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInput"
+      responses:
+        "200":
+          description: Categoría actualizada correctamente
+        "400":
+          description: Datos o ID inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Categoría no encontrada
+        "409":
+          description: El código ya existe
+    patch:
+      tags: [Categorías]
+      summary: Edición parcial de categoría (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaPatch"
+      responses:
+        "200":
+          description: Categoría actualizada parcialmente
+        "400":
+          description: Campos inválidos o no permitidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso
+        "404":
+          description: Categoría no encontrada
+        "409":
+          description: El código ya existe
+    delete:
+      tags: [Categorías]
+      summary: Eliminación lógica de categoría (activo = 0) (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Categoría eliminada lógicamente
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Categoría no encontrada o ya inactiva
+
+  /proveedores:
+    get:
+      tags: [Proveedores]
+      summary: Listar proveedores activos con búsqueda y paginación (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ParamBuscar"
+        - $ref: "#/components/parameters/ParamPagina"
+        - $ref: "#/components/parameters/ParamLimite"
+      responses:
+        "200":
+          description: Página de proveedores activos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaProveedores"
+        "400":
+          description: Parámetros inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+    post:
+      tags: [Proveedores]
+      summary: Registrar un nuevo proveedor (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProveedorInput"
+      responses:
+        "201":
+          description: Proveedor registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensajeCreado"
+        "400":
+          description: Datos inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "409":
+          description: El RUC ya está registrado
+
+  /proveedores/resumen:
+    get:
+      tags: [Proveedores]
+      summary: Listado corto de proveedores activos para select (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Arreglo de proveedores con id y nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumenItem"
+        "401":
+          description: Token requerido, inválido o expirado
+
+  /proveedores/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ParamId"
+    get:
+      tags: [Proveedores]
+      summary: Consultar proveedor activo por ID (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Proveedor encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proveedor"
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "404":
+          description: Proveedor no encontrado o inactivo
+    put:
+      tags: [Proveedores]
+      summary: Edición completa de proveedor (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProveedorInput"
+      responses:
+        "200":
+          description: Proveedor actualizado correctamente
+        "400":
+          description: Datos o ID inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Proveedor no encontrado
+        "409":
+          description: El RUC ya está registrado
+    patch:
+      tags: [Proveedores]
+      summary: Edición parcial de proveedor (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProveedorPatch"
+      responses:
+        "200":
+          description: Proveedor actualizado parcialmente
+        "400":
+          description: Campos inválidos o no permitidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso
+        "404":
+          description: Proveedor no encontrado
+        "409":
+          description: El RUC ya está registrado
+    delete:
+      tags: [Proveedores]
+      summary: Eliminación lógica de proveedor (activo = 0) (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Proveedor eliminado lógicamente
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Proveedor no encontrado o ya inactivo
+
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar clientes activos con búsqueda y paginación (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ParamBuscar"
+        - $ref: "#/components/parameters/ParamPagina"
+        - $ref: "#/components/parameters/ParamLimite"
+      responses:
+        "200":
+          description: Página de clientes activos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaClientes"
+        "400":
+          description: Parámetros inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+    post:
+      tags: [Clientes]
+      summary: Registrar un nuevo cliente (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClienteInput"
+      responses:
+        "201":
+          description: Cliente registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MensajeCreado"
+        "400":
+          description: Datos inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "409":
+          description: El DNI ya está registrado
+
+  /clientes/resumen:
+    get:
+      tags: [Clientes]
+      summary: Listado corto de clientes activos para select (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Arreglo de clientes con id y nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumenItem"
+        "401":
+          description: Token requerido, inválido o expirado
+
+  /clientes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ParamId"
+    get:
+      tags: [Clientes]
+      summary: Consultar cliente activo por ID (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cliente"
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "404":
+          description: Cliente no encontrado o inactivo
+    put:
+      tags: [Clientes]
+      summary: Edición completa de cliente (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClienteInput"
+      responses:
+        "200":
+          description: Cliente actualizado correctamente
+        "400":
+          description: Datos o ID inválidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Cliente no encontrado
+        "409":
+          description: El DNI ya está registrado
+    patch:
+      tags: [Clientes]
+      summary: Edición parcial de cliente (ADMIN, OPERADOR)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientePatch"
+      responses:
+        "200":
+          description: Cliente actualizado parcialmente
+        "400":
+          description: Campos inválidos o no permitidos
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso
+        "404":
+          description: Cliente no encontrado
+        "409":
+          description: El DNI ya está registrado
+    delete:
+      tags: [Clientes]
+      summary: Eliminación lógica de cliente (activo = 0) (Solo ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cliente eliminado lógicamente
+        "400":
+          description: ID inválido
+        "401":
+          description: Token requerido, inválido o expirado
+        "403":
+          description: Rol sin permiso (solo ADMIN)
+        "404":
+          description: Cliente no encontrado o ya inactivo

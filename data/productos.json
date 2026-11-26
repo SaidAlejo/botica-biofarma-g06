@@ -1,0 +1,86 @@
+[
+    {
+        "id": 1,
+        "name": "Ibuprofeno 200mg",
+        "price": 3.00,
+        "category": "medicamentos",
+        "image": "img/ibuprofeno.png"
+    },
+    {
+        "id": 2,
+        "name": "Panadol 200mg",
+        "price": 3.50,
+        "category": "medicamentos",
+        "image": "img/panadol.png"
+    },
+    {
+        "id": 3,
+        "name": "Paracetamol 500mg",
+        "price": 2.00,
+        "category": "medicamentos",
+        "image": "img/paracetamol.png"
+    },
+    {
+        "id": 4,
+        "name": "Omeprazol 20mg",
+        "price": 8.00,
+        "category": "medicamentos",
+        "image": "img/omeprazol.png"
+    },
+    {
+        "id": 5,
+        "name": "Amoxicilina 500mg",
+        "price": 20.00,
+        "category": "medicamentos",
+        "image": "img/amoxicilina.png"
+    },
+    {
+        "id": 6,
+        "name": "Pasta Dental Tubo de 90g",
+        "price": 5.00,
+        "category": "cuidado",
+        "image": "img/pasta.png"
+    },
+    {
+        "id": 7,
+        "name": "Jabón de Tocador 120g",
+        "price": 3.00,
+        "category": "cuidado",
+        "image": "img/jabon.png"
+    },
+    {
+        "id": 8,
+        "name": "Máquinas de Afeitar",
+        "price": 2.00,
+        "category": "cuidado",
+        "image": "img/afeitar.png"
+    },
+    {
+        "id": 9,
+        "name": "Chanel 100ml",
+        "price": 40.10,
+        "category": "perfumeria",
+        "image": "img/perfume.png"
+    },
+    {
+        "id": 10,
+        "name": "Good Girl (Carolina Herrera)",
+        "price": 600.00,
+        "category": "perfumeria",
+        "image": "img/goodgirl.png"
+    },
+    {
+        "id": 11,
+        "name": "1 Million (Paco Rabanne)",
+        "price": 500.00,
+        "category": "perfumeria",
+        "image": "img/1million.png"
+    },
+    {
+        "id": 12,
+        "name": "La Vie Est Belle (Lancôme)",
+        "price": 500.00,
+        "category": "perfumeria",
+        "image": "img/lavie.png"
+    }
+]
