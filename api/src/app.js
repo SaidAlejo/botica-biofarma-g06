@@ -16,27 +16,33 @@ import docsRoutes from "./routes/docs.routes.js";
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
-const origenesPermitidos = (process.env.CORS_ORIGIN || "http://localhost:5500")
+const origenesPermitidos = (process.env.CORS_ORIGIN || "http://localhost:5500,http://localhost")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
 
+// Permitir también el propio origen del servidor (Swagger UI en /api-docs)
+if (!origenesPermitidos.includes(`http://localhost:${PORT}`)) {
+  origenesPermitidos.push(`http://localhost:${PORT}`);
+}
+
 // 1. Middleware de registro de solicitudes
 app.use(registrarSolicitud);
 
-// 2. CORS
-app.use(
+// 2. CORS (permite orígenes configurados y solicitudes same-origin de Swagger UI)
+app.use((req, res, next) => {
+  const mismoOrigen = `${req.protocol}://${req.get("host")}`;
   cors({
     origin: (origin, callback) => {
-      if (!origin || origenesPermitidos.includes(origin)) {
+      if (!origin || origin === mismoOrigen || origenesPermitidos.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`Origen no permitido por CORS: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+  })(req, res, next);
+});
 
 // 3. Parseo de cuerpo JSON
 app.use(express.json());
